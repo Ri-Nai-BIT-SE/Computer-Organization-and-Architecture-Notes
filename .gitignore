@@ -103,3 +103,5 @@ env/
 .envrc
 *.local
 
+
+output/
