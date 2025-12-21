@@ -31,31 +31,131 @@
 ### 1. 吞吐率 (Throughput, TP)
 
 *   **定义**：单位时间内流水线完成的任务数量
-*   **公式**：
+*   **基本公式**：
     $$TP = \frac{n}{T_k}$$
     其中：
     *   $n$：任务数量
     *   $T_k$：完成n个任务的总时间
 
-*   **理想情况**：对于$k$段流水线，在流水线充满后，每个时钟周期完成一个任务
-    $$TP_{\text{理想}} = \frac{1}{T_{\text{时钟}}}$$
+*   **详细公式推导**：
+    
+    对于$k$段流水线，设每段的时间为$\Delta t_1, \Delta t_2, \ldots, \Delta t_k$，时钟周期为$\Delta t = \max\{\Delta t_1, \Delta t_2, \ldots, \Delta t_k\}$（瓶颈段时间）。
+    
+    完成$n$个任务的总时间为：
+    $$T_k = \underbrace{\sum_{i=1}^{k} \Delta t_i}_{\text{第一个任务的时间}} + \underbrace{(n-1) \max\{\Delta t_1, \Delta t_2, \ldots, \Delta t_k\}}_{\text{后续任务跟进的时间}}$$
+    
+    因此，吞吐率为：
+    $$TP = \frac{n \text{ (任务数量)}}{\underbrace{\sum_{i=1}^{k} \Delta t_i}_{\text{第一个任务的时间}} + \underbrace{(n-1) \max\{\Delta t_1, \Delta t_2, \ldots, \Delta t_k\}}_{\text{后续任务跟进的时间}}}$$
+
+*   **理想情况**：当流水线充满后（$n \to \infty$），每个时钟周期完成一个任务
+    $$TP_{\text{理想}} = \lim_{n \to \infty} \frac{n}{\sum_{i=1}^{k} \Delta t_i + (n-1)\Delta t} = \frac{1}{\Delta t} = \frac{1}{T_{\text{时钟}}}$$
+
+*   **实际吞吐率**（考虑流水线建立时间）：
+    $$TP = \frac{n}{k \cdot \Delta t + (n-1) \cdot \Delta t} = \frac{n}{(k+n-1) \cdot \Delta t}$$
+    
+    当$n \gg k$时，$TP \approx \frac{1}{\Delta t}$
+
+*   **计算示例**：
+    
+    假设一个5段流水线（IF、ID、EX、MEM、WB），每段时间为：$\Delta t_1 = 2\text{ns}$，$\Delta t_2 = 1\text{ns}$，$\Delta t_3 = 3\text{ns}$，$\Delta t_4 = 2\text{ns}$，$\Delta t_5 = 1\text{ns}$。
+    
+    - 时钟周期：$\Delta t = \max\{2, 1, 3, 2, 1\} = 3\text{ns}$（瓶颈在EX段）
+    - 完成10个任务的总时间：$T_{10} = (2+1+3+2+1) + (10-1) \times 3 = 9 + 27 = 36\text{ns}$
+    - 吞吐率：$TP = \frac{10}{36} = 0.278 \text{ 任务/ns} = 278 \text{ 任务/μs}$
+    - 理想吞吐率：$TP_{\text{理想}} = \frac{1}{3} = 0.333 \text{ 任务/ns}$
 
 ### 2. 加速比 (Speedup, S)
 
 *   **定义**：不使用流水线与使用流水线所花时间的比值
-*   **公式**：
+*   **基本公式**：
     $$S = \frac{T_{非流水}}{T_{流水}}$$
 
-*   **理想情况**：$k$段流水线的加速比趋近于$k$
-    $$S_{\text{理想}} \approx k$$
+*   **详细公式推导**：
+    
+    对于$k$段流水线，完成一个任务的时间为：
+    - 非流水线：$T_{非流水} = \sum_{i=1}^{k} \Delta t_i$
+    - 流水线：$T_{流水} = k \cdot \Delta t + (n-1) \cdot \Delta t = (k+n-1) \cdot \Delta t$（完成$n$个任务）
+    
+    因此，加速比为：
+    $$S = \frac{T_{非流水}}{T_{流水}} = \frac{n \cdot \sum_{i=1}^{k} \Delta t_i}{(k+n-1) \cdot \Delta t}$$
+    
+    其中$\Delta t = \max\{\Delta t_1, \Delta t_2, \ldots, \Delta t_k\}$。
+
+*   **理想情况**：当$n \to \infty$且各段时间相等（$\Delta t_i = \Delta t$）时
+    $$S_{\text{理想}} = \lim_{n \to \infty} \frac{n \cdot k \cdot \Delta t}{(k+n-1) \cdot \Delta t} = \lim_{n \to \infty} \frac{nk}{k+n-1} = k$$
+
+*   **实际加速比**（考虑瓶颈段）：
+    $$S = \frac{n \cdot \sum_{i=1}^{k} \Delta t_i}{(k+n-1) \cdot \max\{\Delta t_1, \Delta t_2, \ldots, \Delta t_k\}}$$
+    
+    当各段时间不相等时，加速比会小于$k$。
+
+*   **计算示例**：
+    
+    继续使用上面的5段流水线例子：
+    - 非流水线完成10个任务：$T_{非流水} = 10 \times (2+1+3+2+1) = 10 \times 9 = 90\text{ns}$
+    - 流水线完成10个任务：$T_{流水} = 36\text{ns}$（已计算）
+    - 加速比：$S = \frac{90}{36} = 2.5$
+    - 理想加速比（如果各段时间相等为3ns）：$S_{\text{理想}} = 5$
+    
+    可以看出，由于存在瓶颈段（EX段为3ns），实际加速比小于理想值。
 
 ### 3. 效率 (Efficiency, E)
 
-*   **定义**：流水线中各功能段的设备利用率
-*   **公式**：
+*   **定义**：流水线中各功能段的设备利用率，反映流水线硬件的利用程度
+*   **基本公式**：
     $$E = \frac{n \text{个任务占用的时空区}}{k \text{个段占用的总时空区}}$$
 
-*   **理想情况**：当流水线充满且无冲突时，效率接近100%
+*   **详细公式推导**：
+    
+    在时空图中：
+    - $n$个任务占用的时空区 = $n \times \sum_{i=1}^{k} \Delta t_i$
+    - $k$个段占用的总时空区 = $k \times T_k = k \times [\sum_{i=1}^{k} \Delta t_i + (n-1) \cdot \Delta t]$
+    
+    因此，效率为：
+    $$E = \frac{n \cdot \sum_{i=1}^{k} \Delta t_i}{k \cdot [\sum_{i=1}^{k} \Delta t_i + (n-1) \cdot \Delta t]}$$
+
+*   **简化公式**（当各段时间相等，$\Delta t_i = \Delta t$）：
+    $$E = \frac{n \cdot k \cdot \Delta t}{k \cdot [k \cdot \Delta t + (n-1) \cdot \Delta t]} = \frac{n}{k+n-1}$$
+
+*   **效率与吞吐率、加速比的关系**：
+    $$E = \frac{S}{k} = \frac{TP \cdot \sum_{i=1}^{k} \Delta t_i}{k}$$
+    
+    其中$S$为加速比，$TP$为吞吐率。
+
+*   **理想情况**：当$n \to \infty$且各段时间相等时
+    $$E_{\text{理想}} = \lim_{n \to \infty} \frac{n}{k+n-1} = 1 = 100\%$$
+
+*   **计算示例**：
+    
+    继续使用5段流水线例子：
+    - $n = 10$，$k = 5$，$\sum_{i=1}^{5} \Delta t_i = 9\text{ns}$，$\Delta t = 3\text{ns}$
+    - 效率：$E = \frac{10 \times 9}{5 \times [9 + (10-1) \times 3]} = \frac{90}{5 \times 36} = \frac{90}{180} = 0.5 = 50\%$
+    - 如果各段时间相等为3ns：$E = \frac{10}{5+10-1} = \frac{10}{14} = 0.714 = 71.4\%$
+    
+    可以看出，瓶颈段的存在降低了效率。
+
+### 4. 流水线性能指标之间的关系
+
+*   **吞吐率、加速比、效率的关系**：
+    $$E = \frac{S}{k} = \frac{TP \cdot T_{非流水}}{k}$$
+    
+    其中：
+    - $E$：效率
+    - $S$：加速比
+    - $k$：流水线段数
+    - $TP$：吞吐率
+    - $T_{非流水}$：非流水线完成一个任务的时间
+
+*   **综合性能公式**：
+    $$TP = \frac{S \cdot k}{T_{非流水} \cdot k} = \frac{S}{T_{非流水}}$$
+    
+    当$T_{非流水} = k \cdot \Delta t$时：
+    $$TP = \frac{S}{k \cdot \Delta t} = \frac{E \cdot k}{k \cdot \Delta t} = \frac{E}{\Delta t}$$
+
+*   **性能优化目标**：
+    - 最大化吞吐率：$TP_{\max} = \frac{1}{\Delta t}$（减小瓶颈段时间）
+    - 最大化加速比：$S_{\max} = k$（各段时间相等）
+    - 最大化效率：$E_{\max} = 1$（流水线充满且无冲突）
 
 ---
 
@@ -180,6 +280,16 @@ $$\begin{aligned}
 
 **冲突**：BEQ是否跳转在EX阶段才确定，但ADD已经在IF阶段被取入（控制相关）
 
+**分支预测性能分析**：
+
+设分支指令的预测准确率为$p$，预测错误时的惩罚为$P$个周期，则平均每个分支指令的额外周期数为：
+$$C_{\text{branch}} = (1-p) \times P$$
+
+考虑分支预测后的吞吐率：
+$$TP_{\text{实际}} = \frac{TP_0}{1 + f_{\text{branch}} \times C_{\text{branch}}}$$
+
+其中$f_{\text{branch}}$为分支指令的比例，$TP_0 = \frac{1}{\Delta t}$为原始吞吐率。
+
 #### 解决方案
 
 1. **阻塞流水线**：
@@ -220,6 +330,62 @@ $$\begin{aligned}
 *   允许指令不按程序顺序执行
 *   需要更复杂的硬件支持
 *   可以更好地利用硬件资源
+
+---
+
+---
+
+## 💡 学习要点与重难点标注
+
+### 性能指标（★必须背公式）
+
+#### 1. 吞吐率 (TP)
+
+*   **定义**：单位时间完成的任务数
+*   **公式**：$TP = n / T_{total}$
+*   **最大吞吐率**：$TP_{max} = 1 / \Delta t$（其中$\Delta t$为时钟周期）
+
+#### 2. 加速比 (S)
+
+*   **定义**：不使用流水线时间 / 使用流水线时间
+*   **公式**：$S = T_{非流水} / T_{流水}$
+*   **理想情况**：$k$段流水线的加速比趋近于$k$
+
+#### 3. 效率 (E)
+
+*   **定义**：时空图中任务面积 / 总面积
+*   **公式**：$E = \frac{n \text{个任务占用的时空区}}{k \text{个段占用的总时空区}}$
+
+### 三大冒险/相关 (Hazards)（★重点分析题）
+
+#### 1. 结构相关
+
+*   **原因**：资源冲突（如同时访问内存）
+*   **解决**：增加硬件（指令Cache和数据Cache分离）
+
+#### 2. 数据相关
+
+*   **类型**：
+    *   **RAW（写后读）**：最常见
+    *   WAR（读后写）：乱序执行中可能出现
+    *   WAW（写后写）：乱序执行中可能出现
+*   **解决**：
+    *   **旁路技术 (Forwarding/Bypassing)**：最常用
+    *   暂停 (Stall)
+
+#### 3. 控制相关
+
+*   **原因**：遇到跳转/分支指令
+*   **解决**：
+    *   分支预测（静态/动态）
+    *   延迟槽
+    *   多路预测
+
+### 流水线部分的"瓶颈"
+
+> **老师未明说的"潜台词"**：
+> 
+> 课件中提到"瓶颈段"，老师的意思是：**木桶效应**。流水线的时钟周期取决于**最慢**的那一段。做计算题时，一定要找那个时间最长的段作为标准周期 $\Delta t$。
 
 ---
 
