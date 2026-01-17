@@ -7,6 +7,9 @@ hero:
   tagline: 课程笔记
   actions:
     - theme: brand
+      text: 期末复习红宝书
+      link: ./期末复习红宝书
+    - theme: alt
       text: 开始阅读
       link: ./第二章
     - theme: alt

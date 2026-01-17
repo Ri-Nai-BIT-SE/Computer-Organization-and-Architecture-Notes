@@ -97,3 +97,4 @@ $$\text{VRAM容量} = \text{分辨率} \times \text{颜色深度}$$
 
 
 
+
